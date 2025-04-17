@@ -1,0 +1,46 @@
+syntax = "proto3";
+package product;
+
+message Empty {}
+
+message CategoryItem {
+    string id = 1;
+    string name = 2;
+}
+
+message GetAllCategoriesResponse {
+    repeated CategoryItem categoryItems = 1;
+}
+
+message SaveUserCategoryPreferencesRequest {
+    string userId = 1;
+    repeated string categoryIds = 2;
+}
+
+message SaveUserCategoryPreferencesResponse {
+    bool success = 1;
+    string message = 2;
+}
+
+message GetAllProductsFromCategoriesUserPrefersRequest {
+    string userId = 1;
+}
+
+message GetAllProductsFromCategoriesUserPrefersResponse {
+    repeated ProductItem productItems = 1;
+}
+
+message ProductItem {
+    string name = 1;
+    int32 price = 2;
+    string category = 3;
+    string imageURL = 4;
+    string slug = 5;
+    string description = 6;
+}
+
+service ProductService {
+    rpc GetAllCategories(Empty) returns (GetAllCategoriesResponse) {}
+    rpc SaveUserCategoryPreferences(SaveUserCategoryPreferencesRequest) returns (SaveUserCategoryPreferencesResponse) {}
+    rpc GetAllProductsFromCategoriesUserPrefers(GetAllProductsFromCategoriesUserPrefersRequest) returns (GetAllProductsFromCategoriesUserPrefersResponse) {}
+}
