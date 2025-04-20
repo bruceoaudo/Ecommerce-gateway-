@@ -2,37 +2,56 @@ import { Request, Response, NextFunction } from "express";
 import { authClient } from "../client/authClient";
 import { UnauthorizedError } from "../errors/unauthorized-error";
 
+interface VerifyTokenResponse {
+  userId: string
+  email: string
+}
+
+/**
+ * Express middleware for JWT authentication
+ * @throws {UnauthorizedError} When authentication fails
+ */
 export const authenticate = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    // 1. Get token from cookies
-    const token = req.cookies?.token;
+    // 1. Get token from cookies or Authorization header
+    const token = req.cookies?.token || req.headers.authorization?.split(' ')[1];
     if (!token) {
-      throw new UnauthorizedError("Authentication token missing");
+      throw new UnauthorizedError("Authentication required");
     }
 
-    // 2. Verify token via gRPC
-    const response = await authClient.verifyToken({ token });
+    // 2. Verify token via gRPC with timeout
+    const response = (await Promise.race([
+      authClient.verifyToken({ token }),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Verification timeout")), 5000)
+      ),
+    ])) as VerifyTokenResponse;
 
-    // 3. Attach user to request object
+    // 3. Validate and attach user
+    if (!response.userId) {
+      throw new UnauthorizedError("Invalid token payload");
+    }
+
     req.user = {
       userId: response.userId,
-      email: response.email,
+      email: response.email
     };
+
+    // 4. Refresh token if expiring soon (optional)
+    res.locals.shouldRefreshToken = true;
 
     next();
   } catch (error) {
-    console.error("Authentication error:", error);
-
-    // Clear invalid token cookie
     res.clearCookie("token");
+    
+    const message = error instanceof Error 
+      ? error.message.replace(/^TOKEN_VERIFICATION_FAILED: /, '')
+      : "Authentication failed";
 
-    if (error instanceof UnauthorizedError) {
-      return next(error);
-    }
-    next(new UnauthorizedError("Invalid or expired token"));
+    next(new UnauthorizedError(message));
   }
 };
