@@ -20,32 +20,10 @@ const client = new proto.product.ProductService(
 );
 
 
-export interface GetAllCategoriesRequest{ }
 
-interface categoryItem {
-    id: string
-    name: string
-}
+interface GetAllProductsRequest {}
 
-export interface GetAllCategoriesResponse {
-    categoryItems: categoryItem[]
-}
-
-interface SaveUserCategoryPreferencesRequest {
-    userId: string;
-    categoryIds: string[];
-}
-
-interface SaveUserCategoryPreferencesResponse {
-    status: boolean;
-    message: string;
-}
-
-interface GetAllProductsFromCategoriesUserPrefersRequest {
-    userId: string;
-}
-
-interface GetAllProductsFromCategoriesUserPrefersResponse {
+interface GetAllProductsResponse {
   productItems: ProductItem[]
 }
 
@@ -59,57 +37,25 @@ interface ProductItem {
 }
 
 export const productClient = {
-  getAllCategories: (
-    request: GetAllCategoriesRequest
-  ): Promise<GetAllCategoriesResponse> => {
+  getAllProducts: (
+    request: GetAllProductsRequest
+  ): Promise<GetAllProductsResponse> => {
     return new Promise((resolve, reject) => {
-      client.GetAllCategories(
+      client.GetAllProducts(
         request,
         (
           err: grpc.ServiceError | null,
-          response?: GetAllCategoriesResponse
+          response?: GetAllProductsResponse
         ) => {
-          if (err) reject(err);
-          else resolve(response!);
-        }
-      );
-    });
-  },
-
-  SaveUserCategoryPreferences: (
-    request: SaveUserCategoryPreferencesRequest
-  ): Promise<SaveUserCategoryPreferencesResponse> => {
-    return new Promise((resolve, reject) => {
-      client.SaveUserCategoryPreferences(
-        {
-          user_id: request.userId,
-          category_ids: request.categoryIds,
-        },
-        (
-          err: grpc.ServiceError | null,
-          response?: SaveUserCategoryPreferencesResponse
-        ) => {
-          if (err) reject(err);
-          else resolve(response!);
-        }
-      );
-    });
-  },
-
-  GetAllProductsFromCategoriesUserPrefers: (
-    request: GetAllProductsFromCategoriesUserPrefersRequest
-  ): Promise<GetAllProductsFromCategoriesUserPrefersResponse> => {
-    return new Promise((resolve, reject) => {
-      client.SaveUserCategoryPreferences(
-        {
-          user_id: request.userId,
-        },
-        (
-          err: grpc.ServiceError | null,
-          response?: GetAllProductsFromCategoriesUserPrefersResponse
-        ) => {
-          if (err) reject(err);
-          else resolve(response!);
+          if (err) {
+            console.error("gRPC client error:", err);
+            reject({
+              code: err.code || grpc.status.INTERNAL,
+              message: err.message || "Failed to fetch products",
+            });
+          } else {
+            resolve(response!);
+          }
         }
       );
     });

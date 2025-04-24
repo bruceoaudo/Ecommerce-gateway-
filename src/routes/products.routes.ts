@@ -1,6 +1,7 @@
 import { Request, Response, Router } from "express";
 import { productClient } from "../client/productClient";
 import { authenticate } from "../middlewares/authenticate";
+import * as grpc from "@grpc/grpc-js";
 
 declare module "express" {
   interface Request {
@@ -13,82 +14,39 @@ declare module "express" {
 
 const router = Router()
 
-router.get('/categories', (req: Request, res: Response) => {
+router.get('/all-products', (req: Request, res: Response) => {
     (async () => {
         try {
-            const categories = await productClient.getAllCategories({});
+          const response = await productClient.getAllProducts({});
 
-            res.json(categories)
-        } catch (error) {
-            console.error("Category fetching error:", error);
-            res.status(500).json({
-              success: false,
-              message: "Category fetching failed",
-            });
+          res.status(200).json({
+            success: true,
+            data: response.productItems,
+            count: response.productItems.length,
+          });
+        } catch (error: any) {
+          console.error("Product fetching error:", error);
+
+          // Map gRPC error codes to HTTP status codes
+          const statusMap: Record<number, number> = {
+            [grpc.status.NOT_FOUND]: 404,
+            [grpc.status.INVALID_ARGUMENT]: 400,
+            [grpc.status.UNAUTHENTICATED]: 401,
+            [grpc.status.PERMISSION_DENIED]: 403,
+            [grpc.status.INTERNAL]: 500,
+            [grpc.status.UNAVAILABLE]: 503,
+          };
+
+          const statusCode = statusMap[error.code] || 500;
+
+          res.status(statusCode).json({
+            success: false,
+            message: error.message.split(".")[1] || "Failed to fetch products",
+            code: error.code || "INTERNAL_ERROR",
+          });
         }
     })()
 })
-
-router.get("/categories/save-user-preferences", authenticate, (req: Request, res: Response) => {
-  (async () => {
-    try {
-      const { categoryIds } = req.body;
-        const userId = req!.user!.userId;
-        
-        if (!categoryIds || !Array.isArray(categoryIds)) {
-          return res.status(400).json({
-            success: false,
-            message: "Category IDs must be provided as an array",
-          });
-        }
-
-      const response = await productClient.SaveUserCategoryPreferences({
-        userId,
-        categoryIds,
-      });
-
-      res.json({
-        success: true,
-        message: "User preferences saved successfully",
-      });
-    } catch (error) {
-      console.error("Error saving preferences:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to save preferences",
-      });
-    }
-  })();
-});
-
-router.get(
-  "/products/get-products-from-user-category-preferences",
-  authenticate,
-  (req: Request, res: Response) => {
-    (async () => {
-      try {
-        const userId = req!.user!.userId;
-        
-        const response = await productClient.GetAllProductsFromCategoriesUserPrefers({
-          userId
-        });
-
-
-        res.json({
-          success: true,
-          message: "Products fetched successfully",
-          products: response.productItems
-        });
-      } catch (error) {
-        console.error("Error saving preferences:", error);
-        res.status(500).json({
-          success: false,
-          message: "Failed to save preferences",
-        });
-      }
-    })();
-  }
-);
 
 
 export default router;

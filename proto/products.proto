@@ -1,32 +1,9 @@
 syntax = "proto3";
 package product;
 
-message Empty {}
+message GetAllProductsRequest {}
 
-message CategoryItem {
-    string id = 1;
-    string name = 2;
-}
-
-message GetAllCategoriesResponse {
-    repeated CategoryItem categoryItems = 1;
-}
-
-message SaveUserCategoryPreferencesRequest {
-    string userId = 1;
-    repeated string categoryIds = 2;
-}
-
-message SaveUserCategoryPreferencesResponse {
-    bool success = 1;
-    string message = 2;
-}
-
-message GetAllProductsFromCategoriesUserPrefersRequest {
-    string userId = 1;
-}
-
-message GetAllProductsFromCategoriesUserPrefersResponse {
+message GetAllProductsResponse {
     repeated ProductItem productItems = 1;
 }
 
@@ -40,7 +17,5 @@ message ProductItem {
 }
 
 service ProductService {
-    rpc GetAllCategories(Empty) returns (GetAllCategoriesResponse) {}
-    rpc SaveUserCategoryPreferences(SaveUserCategoryPreferencesRequest) returns (SaveUserCategoryPreferencesResponse) {}
-    rpc GetAllProductsFromCategoriesUserPrefers(GetAllProductsFromCategoriesUserPrefersRequest) returns (GetAllProductsFromCategoriesUserPrefersResponse) {}
+    rpc GetAllProducts(GetAllProductsRequest) returns (GetAllProductsResponse) {}
 }

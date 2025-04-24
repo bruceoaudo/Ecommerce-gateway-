@@ -46,7 +46,7 @@ router.post('/register', (req: Request, res: Response) => {
 
           res.status(httpStatus).json({
             success: false,
-            message: errorMessage, // Forward the gRPC error message
+            message: errorMessage.split(":")[1], // Forward the gRPC error message
           });
         } else {
           // Unknown error (fallback)
@@ -137,7 +137,7 @@ router.post("/login", (req: Request, res: Response) => {
 
         res.status(httpStatus).json({
           success: false,
-          message: errorMessage, // Forward the gRPC error message
+          message: errorMessage.split(':')[1], // Forward the gRPC error message
         });
       } else {
         // Unknown error (fallback)
